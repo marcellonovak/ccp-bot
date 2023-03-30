@@ -1,0 +1,5 @@
+# Ignore my bot token - otherwise would be a pain to deal with
+bot-token.txt
+
+# Ignore my original bot file, using it to compare and contrast to create a report on this project.
+CCP_Bot_Original.py
