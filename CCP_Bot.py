@@ -15,9 +15,6 @@ general_channel_id = 704783171035856987
 count_channel_id = 1049363506069245952
 quote_channel_id = 805579879038058516
 
-# Bot Token Initalization
-bot_token = ""
-
 # Dictionary to store user strikes
 user_strikes = {}
 
@@ -34,11 +31,6 @@ async def on_ready():
     # Wipe log file
     with open('ccp-log-file.txt', "w") as log_file:
         pass
-
-    # Load bot token file
-    global bot_token
-    with open('bot-token.txt', 'r') as bot_token_file:
-        bot_token = bot_token_file.readline().strip()
 
     await bot.get_channel(general_channel_id).send("你好! I'm back online!")
     loginfo("Startup/INFO", "Logged in as " + bot.user.name + " (" + str(bot.user.id) + ")")
@@ -303,9 +295,11 @@ async def wisdom(ctx) -> None:
     selected_wisdom = random.choice(wisdom_list)
     seeker = ctx.author
     await ctx.send(f"{seeker.mention} Confucius say: {selected_wisdom}")
-
+    
 # Run the thingy
-bot.run(bot_token)
+with open('bot-token.txt', 'r') as bot_token_file:
+    bot_token = bot_token_file.readline().strip()
+    bot.run(bot_token)
 
 '''
 Issues
