@@ -1,0 +1,2 @@
+[23/03/30][09:05:32][Startup/INFO              ]: Logged in as CCP (1088259739336589312)
+[23/03/30][09:05:32][Startup/INFO              ]: Wisdom loaded: 52 lines
