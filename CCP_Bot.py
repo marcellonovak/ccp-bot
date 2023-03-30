@@ -32,7 +32,7 @@ allowed_channels = ['general', 'memes', 'spam', 'bot-commands', 'server-suggesti
 @bot.event
 async def on_ready():
     # Wipe log file
-    with open('ccp-log-file.txt', "w") as log_file
+    with open('ccp-log-file.txt', "w") as log_file:
         pass
 
     # Load bot token file
