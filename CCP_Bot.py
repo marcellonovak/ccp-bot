@@ -30,15 +30,17 @@ allowed_channels = ['general', 'memes', 'spam', 'bot-commands', 'server-suggesti
 async def on_ready():
     # Wipe log file
     with open('ccp-log-file.txt', "w") as log_file:
-        pass
+        log_file.write("")
 
+    # Send welcome message and log startup
     await bot.get_channel(general_channel_id).send("你好! I'm back online!")
     loginfo("Startup/INFO", "Logged in as " + bot.user.name + " (" + str(bot.user.id) + ")")
 
+    # Load wisdom and log load success
+    # Todo: Add error message if wisdom file is not found?
     with open('confucius.txt', 'r') as confucius_file:
         global wisdom_list
         wisdom_list = confucius_file.readlines()
-
     loginfo("Startup/INFO", f'Wisdom loaded: {len(wisdom_list)} lines')
 
 
@@ -52,8 +54,9 @@ def loginfo(prefix, message) -> None:
 # When messages are sent
 @bot.event
 async def on_message(message):
+    # Ignore initial messages from bots
     if message.author.bot:
-        return  # Ignore initial messages from bots
+        return
 
     # If message is in the learn-to-count channel
     if message.channel.name == 'learn-to-count':
@@ -67,18 +70,22 @@ async def on_message(message):
         loginfo("Counting Message/INFO", f'Previous Message Found: '
                                          f'{last_human_message.author} {last_human_message.content}')
 
+        # Try floating found message
         loginfo("Checking Message/INFO", f'Floating "{message.content}"...')
         try:
             float(message.content)
+        # Strike is failure detected (non-number)
         except ValueError:
             await message.delete()
             await giveStrike(message, "This channel is for numbers only",
                              "Checking Message/STRIKE", f"{message.author} sent a non-number message: "
                                                         f"Struck Message: {message.content}")
             return
+        # Log success if numeric
         else:
             loginfo("Checking Message/INFO", f'Floating successful')
 
+        # Detect repetitive messaging, strike if detected
         if last_human_message.author == message.author:
             await message.delete()
             await giveStrike(message, "Only one person can count at a time",
@@ -86,6 +93,7 @@ async def on_message(message):
                                                         f"Struck Message: {message.content}")
             return
 
+        # Double check if both messages are numeric (redundant?)
         if isinstance(float(last_human_message.content), float) and isinstance(float(message.content), float):
 
             # If [current count < last count] or [(last count + 1) < current count]
@@ -97,8 +105,15 @@ async def on_message(message):
                                  "Checking Message/STRIKE", f"{message.author} counted incorrectly: "
                                                             f"Struck Message: {message.content}")
                 return
+            elif message.content.startswith('0'):
+                # Delete messages that start with 0
+                await message.delete()
+                await giveStrike(message, "Don't fucking start your messages with 0 you cunt",
+                                 "Checking Message/STRIKE", f"{message.author} padded their count: "
+                                                            f"Struck Message: {message.content}")
+                return
 
-    # Let the damn bot think
+    # Let the bot think
     await bot.process_commands(message)
 
 
@@ -134,7 +149,7 @@ async def giveStrike(message, strike_output,
     await bot.get_channel(count_channel_id).send(
         f"Strike {user_strikes[struck_user.id]['strikes']}, {strike_output} {struck_user.mention}")
 
-    # Grant the stupid role for illiterate fucks
+    # Grant the stupid role for dumb users
     if int(user_strikes[struck_user.id]['strikes']) >= 5:
         # Log user going over strike limit
         loginfo('Moderation/INFO', f'Exiling {struck_user} for going over the strike limit')
@@ -176,6 +191,7 @@ async def pardon(ctx, user: discord.Member = None) -> None:
     admin_perms = discord.utils.get(ctx.guild.roles, name='Admin')  # Get the "Admin" role object
     command_author = ctx.author  # Get who called the command
 
+    # Todo: make all this a function?
     if admin_perms not in ctx.author.roles:  # Check if user doesn't have perms
         await ctx.send(f'{command_author.mention}, you do not have permission to pardon users.')
         # Log the attempt
@@ -214,6 +230,7 @@ async def whack(ctx, user: discord.Member = None) -> None:
     if ctx.channel.name not in allowed_channels:
         return
 
+    # Todo: seen above, all of this is reused
     admin_perms = discord.utils.get(ctx.guild.roles, name='Admin')  # get the "Admin" role object
     command_author = ctx.author
 
@@ -223,7 +240,7 @@ async def whack(ctx, user: discord.Member = None) -> None:
         loginfo('Moderation/INFO', f'{command_author} tried whacking without permissions')
         return
 
-    if user is None:  # If command is called without menstioning a user
+    if user is None:  # If command is called without mentioning a user
         await ctx.send(f'{command_author.mention}, please mention a user to whack.')
         # Log the error
         loginfo('Moderation/ERROR', f'{command_author} tried whacking without mentioning a user')
@@ -273,7 +290,7 @@ async def quote(ctx: commands.Context, text=None) -> None:
             quote_author = quoted_message.author  # Get the author of the quote
             content = quoted_message.content  # Get what the quote actually is
 
-            # Send the full quote in format
+            # Send the full quote in format:
             # "Quote Content"
             # [Author] @ 00:00:00:00
             # Quoted by [Snitch]
@@ -303,8 +320,7 @@ with open('bot-token.txt', 'r') as bot_token_file:
 
 '''
 Issues
-- Need to delete messed up message
-- why don't emojis work
+- why don't emojis work (for quotes)
 - delete wrong $quote messages
 - delete captain fucking hook
 
@@ -326,6 +342,15 @@ Changelog
 - Created a logging function, working on logging to a file
 3/30:
 - Load bot token from a file
+???:
+- Created an FTP server on debian with vsftpd
+- Transferred the files over with filezilla
+- Started the python process headless
+- Since the token is loaded from a file, can post the bot code from github easy
+- Able to update the bot using github
+4/10:
+- Created a new strike for padded messages
+- Added some better comments
 
 todo
 - add random roast messages for strikes
@@ -333,4 +358,5 @@ todo
 - add image quoting
 - figure out where to host the text files (SQL?)
 - Maybe define the channel IDs in a file too?
+- Make messages uneditable somehow?
 '''
