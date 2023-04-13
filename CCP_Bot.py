@@ -163,8 +163,29 @@ async def giveStrike(message, strike_output,
             f'Get sent to sped class {struck_user.mention}, appeal to the discord mod for mercy.')
 
 
+# Function to check perms
+async def checkPerms(ctx, role_needed, command_tried):
+    checked_role = discord.utils.get(ctx.guild.roles, name=role_needed)  # Get the role object to check
+    command_author = ctx.author  # Get who called the command
+
+    # If perms not valid:
+    if checked_role is False:
+        # If user does not have perms, give an error in chat
+        await ctx.send(f'{command_author.mention}, you do not have permission to use {command_tried}')
+        # Log the attempt, and the command tried
+        loginfo('Moderation/INFO', f'{command_author} tried using {command_tried} without perms')
+
+    return checked_role in ctx.author.roles
+
+
 @bot.command()  # $strikes command
-async def strikes(ctx, user: discord.Member = None) -> None:
+async def strikes(ctx, user: discord.Member = commands.parameter(default=None,
+                                                                 description=": User to check strikes of")):
+    """
+    Check how many strikes you have
+    Usage: $strikes
+    """
+
     # Only allow command in allowed channels
     if ctx.channel.name not in allowed_channels:
         return
@@ -183,92 +204,98 @@ async def strikes(ctx, user: discord.Member = None) -> None:
 
 
 @bot.command()  # $pardon command
-async def pardon(ctx, user: discord.Member = None) -> None:
+async def pardon(ctx, user: discord.Member = commands.parameter(default=None,
+                                                                description=": User to pardon")) -> None:
+    """
+    Pardon a user, resetting their strikes to 0
+    Usage: $pardon @(user)
+    """
+
     # Only allow command in allowed channels (yes, even for me)
     if ctx.channel.name not in allowed_channels:
         return
 
-    admin_perms = discord.utils.get(ctx.guild.roles, name='Admin')  # Get the "Admin" role object
     command_author = ctx.author  # Get who called the command
 
-    # Todo: make all this a function?
-    if admin_perms not in ctx.author.roles:  # Check if user doesn't have perms
-        await ctx.send(f'{command_author.mention}, you do not have permission to pardon users.')
-        # Log the attempt
-        loginfo('Moderation/INFO', f'{command_author} tried pardoning without permissions')
-        return
+    if await checkPerms(ctx, 'Admin', '$pardon'):  # Check if user has perms, returns true
 
-    if user is None:  # If command is called without mentioning a user
-        await ctx.send(f'{command_author.mention}, please mention a user to pardon.')
-        # Log the error
-        loginfo('Moderation/ERROR', f'{command_author} tried pardoning without mentioning a user')
-        return
+        if user is None:  # If command is called without mentioning a user
+            await ctx.send(f'{command_author.mention}, please mention a user to pardon.')
+            # Log the error
+            loginfo('Moderation/ERROR', f'{command_author} tried pardoning without mentioning a user')
+            return
 
-    if user.bot:  # If command is called on a bot
-        await ctx.send('Bots do not have strikes, cannot be pardoned.')
-        # Log the error
-        loginfo('Moderation/ERROR', f'{command_author} tried pardoning a bot')
-        return
+        if user.bot:  # If command is called on a bot
+            await ctx.send('Bots do not have strikes and cannot be pardoned.')
+            # Log the error
+            loginfo('Moderation/ERROR', f'{command_author} tried pardoning a bot')
+            return
 
-    else:  # Pardon if valid command is passed
-        # Get role
-        stupid_role = discord.utils.get(user.guild.roles, name="Faggot")
+        else:  # Pardon if valid command is passed
+            # Get role
+            stupid_role = discord.utils.get(user.guild.roles, name="Faggot")
 
-        # Pardon user
-        await ctx.send(f'{user.mention} has been pardoned. Strikes have been reset.')
-        user_strikes.setdefault(user.id, {'strikes': 0})['strikes'] = 0
-        if stupid_role in user.roles:
-            await user.remove_roles(stupid_role)
+            # Pardon user
+            await ctx.send(f'{user.mention} has been pardoned. Strikes have been reset.')
+            user_strikes.setdefault(user.id, {'strikes': 0})['strikes'] = 0
+            if stupid_role in user.roles:
+                await user.remove_roles(stupid_role)
 
-        # Log the pardon
-        loginfo('Moderation/INFO', f'{command_author} successfully pardoned {user}')
+            # Log the pardon
+            loginfo('Moderation/INFO', f'{command_author} successfully pardoned {user}')
 
 
 @bot.command()  # whack command
-async def whack(ctx, user: discord.Member = None) -> None:
+async def whack(ctx, user: discord.Member = commands.parameter(default=None,
+                                                               description=": User to whack")) -> None:
+    """
+    Whack a user, settings their strikes to 999
+    Usage: $whack @(user)
+    """
+
     # Only allow command in allowed channels (yes, even for me)
     if ctx.channel.name not in allowed_channels:
         return
 
-    # Todo: seen above, all of this is reused
-    admin_perms = discord.utils.get(ctx.guild.roles, name='Admin')  # get the "Admin" role object
-    command_author = ctx.author
+    command_author = ctx.author  # Get who called the command
 
-    if admin_perms not in ctx.author.roles:  # Check if user has perms
-        await ctx.send(f'{command_author.mention}, you do not have permission to whack users.')
-        # Log the attempt
-        loginfo('Moderation/INFO', f'{command_author} tried whacking without permissions')
-        return
+    if await checkPerms(ctx, 'Admin', '$whack'):  # Check if user has perms, returns true
 
-    if user is None:  # If command is called without mentioning a user
-        await ctx.send(f'{command_author.mention}, please mention a user to whack.')
-        # Log the error
-        loginfo('Moderation/ERROR', f'{command_author} tried whacking without mentioning a user')
-        return
+        if user is None:  # If command is called without mentioning a user
+            await ctx.send(f'{command_author.mention}, please mention a user to whack.')
+            # Log the error
+            loginfo('Moderation/ERROR', f'{command_author} tried whacking without mentioning a user')
+            return
 
-    if user.bot:  # If command is called on a bot
-        await ctx.send('Bots do not have strikes, cannot be whacked.')
-        # Log the error
-        loginfo('Moderation/ERROR', f'{command_author} tried whacking a bot')
-        return
+        if user.bot:  # If command is called on a bot
+            await ctx.send('Bots do not have strikes, cannot be whacked.')
+            # Log the error
+            loginfo('Moderation/ERROR', f'{command_author} tried whacking a bot')
+            return
 
-    else:  # Whack if valid command is passed
-        # Get role
-        stupid_role = discord.utils.get(user.guild.roles, name="Faggot")
+        else:  # Whack if valid command is passed
+            # Get role
+            stupid_role = discord.utils.get(user.guild.roles, name="Faggot")
 
-        # Whack user
-        await ctx.send(f'{user.mention} has been whacked. Strikes have been set to 999.')
-        user_strikes.setdefault(user.id, {'strikes': 0})['strikes'] = 999
-        if stupid_role not in user.roles:
-            await user.add_roles(stupid_role)
-        await ctx.send(f'Get sent to sped class {user.mention}, appeal to the discord mod for mercy.')
+            # Whack user
+            await ctx.send(f'{user.mention} has been whacked. Strikes have been set to 999.')
+            user_strikes.setdefault(user.id, {'strikes': 0})['strikes'] = 999
+            if stupid_role not in user.roles:
+                await user.add_roles(stupid_role)
+            await ctx.send(f'Get sent to sped class {user.mention}, appeal to the discord mod for mercy.')
 
-        # Log the whack
-        loginfo('Moderation/INFO', f'{command_author} successfully whacked {user}')
+            # Log the whack
+            loginfo('Moderation/INFO', f'{command_author} successfully whacked {user}')
 
 
 @bot.command()  # $quote command
-async def quote(ctx: commands.Context, text=None) -> None:
+async def quote(ctx: commands.Context, text=commands.parameter(default=None,
+                                                               description=": Replied message to quote")) -> None:
+    """
+    Automatically quote a user's message
+    Usage: $quote (when replying to a message)
+    """
+
     # Only allow command in allowed channels
     if ctx.channel.name not in allowed_channels:
         return
@@ -305,6 +332,11 @@ async def quote(ctx: commands.Context, text=None) -> None:
 
 @bot.command()  # $wisdom command
 async def wisdom(ctx) -> None:
+    """
+    Prints out a wise saying
+    Usage: $wisdom
+    """
+
     # Only allow command in allowed channels
     if ctx.channel.name not in allowed_channels:
         return
@@ -351,6 +383,9 @@ Changelog
 4/10:
 - Created a new strike for padded messages
 - Added some better comments
+4/12:
+- Made perm-checking a function
+- Added help functionality, and argument descriptions
 
 todo
 - add random roast messages for strikes
@@ -359,4 +394,7 @@ todo
 - figure out where to host the text files (SQL?)
 - Maybe define the channel IDs in a file too?
 - Make messages uneditable somehow?
+- Make a taiwan to china converter
+- Make a $wipe command, admin only
+- Make categories for commands
 '''
