@@ -1,2 +1,6 @@
-[23/03/30][09:05:32][Startup/INFO              ]: Logged in as CCP (1088259739336589312)
-[23/03/30][09:05:32][Startup/INFO              ]: Wisdom loaded: 52 lines
+[23/04/24][21:52:02][Startup/INFO              ]: Logged in as CCP (1088259739336589312)
+[23/04/24][21:52:02][Startup/INFO              ]: Wisdom loaded: 52 lines
+[23/04/24][21:52:02][Startup/INFO              ]: Blacklist loaded: 52 words
+[23/04/24][21:52:20][Blacklist/INFO            ]: Struck Message: Marbingeroid
+[23/04/24][21:52:28][Blacklist/INFO            ]: Struck Message: Marky
+[23/04/24][21:52:37][Blacklist/INFO            ]: Struck Message: Markitty

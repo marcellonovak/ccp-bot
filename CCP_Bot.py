@@ -10,6 +10,8 @@ intents.messages = True
 
 bot = commands.Bot(command_prefix='$', intents=discord.Intents.all())
 
+blacklist_file = "blacklist.txt"
+
 # Channel IDs
 general_channel_id = 704783171035856987
 count_channel_id = 1049363506069245952
@@ -18,8 +20,10 @@ quote_channel_id = 805579879038058516
 # Dictionary to store user strikes
 user_strikes = {}
 
-# List of wisdom
+# Lists
 wisdom_list = []
+blacklist = []
+naughtylist = []
 
 # Command channel whitelists
 allowed_channels = ['general', 'memes', 'spam', 'bot-commands', 'server-suggestions', 'sportsball']
@@ -43,6 +47,17 @@ async def on_ready():
         wisdom_list = confucius_file.readlines()
     loginfo("Startup/INFO", f'Wisdom loaded: {len(wisdom_list)} lines')
 
+    # Load blacklist and log load success
+    with open('blacklist.txt', 'r') as blacklist_file:
+        global blacklist
+        blacklist = [word.strip() for word in blacklist_file.read().split(",")]
+    loginfo("Startup/INFO", f'Blacklist loaded: {len(wisdom_list)} words')
+
+    # Load naughty list and log load success
+    with open('naughtylist.txt', 'r', encoding='utf-16') as naughtylist_file:
+        global naughtylist
+        naughtylist = [word.strip() for word in naughtylist_file.read().split(",")]
+
 
 # Log to file function
 def loginfo(prefix, message) -> None:
@@ -58,6 +73,13 @@ async def on_message(message):
     if message.author.bot:
         return
 
+    # Delete blacklisted words
+    for word in blacklist:
+        if word.lower() in message.content.lower():
+            await message.delete()
+            await message.channel.send(f"{message.author.mention}, {random.choice(naughtylist)}")
+            loginfo("Blacklist/INFO", f"Struck Message: {message.content}")
+
     # If message is in the learn-to-count channel
     if message.channel.name == 'learn-to-count':
 
@@ -66,9 +88,9 @@ async def on_message(message):
 
         # Log all relevant info
         loginfo("Counting Message/INFO", f'Current Message Received: '
-                                         f'{message.author} {message.content}')
+                                            f'{message.author} {message.content}')
         loginfo("Counting Message/INFO", f'Previous Message Found: '
-                                         f'{last_human_message.author} {last_human_message.content}')
+                                            f'{last_human_message.author} {last_human_message.content}')
 
         # Try floating found message
         loginfo("Checking Message/INFO", f'Floating "{message.content}"...')
@@ -78,7 +100,7 @@ async def on_message(message):
         except ValueError:
             await message.delete()
             await giveStrike(message, "This channel is for numbers only",
-                             "Checking Message/STRIKE", f"{message.author} sent a non-number message: "
+                                "Checking Message/STRIKE", f"{message.author} sent a non-number message: "
                                                         f"Struck Message: {message.content}")
             return
         # Log success if numeric
@@ -89,8 +111,8 @@ async def on_message(message):
         if last_human_message.author == message.author:
             await message.delete()
             await giveStrike(message, "Only one person can count at a time",
-                             "Checking Message/STRIKE", f"{message.author} counted repetitively: "
-                                                        f"Struck Message: {message.content}")
+                                "Checking Message/STRIKE", f"{message.author} counted repetitively: "
+                                f"Struck Message: {message.content}")
             return
 
         # Double check if both messages are numeric (redundant?)
@@ -102,15 +124,15 @@ async def on_message(message):
                 # Delete offending message, strike for incorrect counting
                 await message.delete()
                 await giveStrike(message, "You can't count",
-                                 "Checking Message/STRIKE", f"{message.author} counted incorrectly: "
-                                                            f"Struck Message: {message.content}")
+                                    "Checking Message/STRIKE", f"{message.author} counted incorrectly: "
+                                    f"Struck Message: {message.content}")
                 return
             elif message.content.startswith('0'):
                 # Delete messages that start with 0
                 await message.delete()
                 await giveStrike(message, "Don't fucking start your messages with 0 you cunt",
-                                 "Checking Message/STRIKE", f"{message.author} padded their count: "
-                                                            f"Struck Message: {message.content}")
+                                    "Checking Message/STRIKE", f"{message.author} padded their count: "
+                                    f"Struck Message: {message.content}")
                 return
 
     # Let the bot think
@@ -121,7 +143,7 @@ async def on_message(message):
 async def findLastHumanMessage(channel) -> discord.Message:
     loginfo("Finding Human Message/INFO", f'Looking for last human message in {channel.name}...')
     loginfo("Finding Human Message/INFO", f'Last recorded message: '
-                                          f'{channel.last_message.author} {channel.last_message.content}')
+                                    f'{channel.last_message.author} {channel.last_message.content}')
 
     async for message in channel.history(limit=None, oldest_first=False):
 
@@ -136,7 +158,7 @@ async def findLastHumanMessage(channel) -> discord.Message:
 
 # Function to give a user a strike
 async def giveStrike(message, strike_output,
-                     log_strike_prefix, log_strike_message) -> None:
+                        log_strike_prefix, log_strike_message) -> None:
     struck_user = message.author
 
     # Console log when a strike is given
@@ -180,7 +202,7 @@ async def checkPerms(ctx, role_needed, command_tried):
 
 @bot.command()  # $strikes command
 async def strikes(ctx, user: discord.Member = commands.parameter(default=None,
-                                                                 description=": User to check strikes of")):
+    description=": User to check strikes of")):
     """
     Check how many strikes you have
     Usage: $strikes
@@ -205,7 +227,7 @@ async def strikes(ctx, user: discord.Member = commands.parameter(default=None,
 
 @bot.command()  # $pardon command
 async def pardon(ctx, user: discord.Member = commands.parameter(default=None,
-                                                                description=": User to pardon")) -> None:
+    description=": User to pardon")) -> None:
     """
     Pardon a user, resetting their strikes to 0
     Usage: $pardon @(user)
@@ -247,7 +269,7 @@ async def pardon(ctx, user: discord.Member = commands.parameter(default=None,
 
 @bot.command()  # whack command
 async def whack(ctx, user: discord.Member = commands.parameter(default=None,
-                                                               description=": User to whack")) -> None:
+    description=": User to whack")) -> None:
     """
     Whack a user, settings their strikes to 999
     Usage: $whack @(user)
@@ -290,7 +312,7 @@ async def whack(ctx, user: discord.Member = commands.parameter(default=None,
 
 @bot.command()  # $quote command
 async def quote(ctx: commands.Context, text=commands.parameter(default=None,
-                                                               description=": Replied message to quote")) -> None:
+    description=": Replied message to quote")) -> None:
     """
     Automatically quote a user's message
     Usage: $quote (when replying to a message)
@@ -386,6 +408,9 @@ Changelog
 4/12:
 - Made perm-checking a function
 - Added help functionality, and argument descriptions
+4/24:
+- Added a blacklist
+- Changed up some of the code styling
 
 todo
 - add random roast messages for strikes
